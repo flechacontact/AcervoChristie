@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>O Acervo Completo: Agatha Christie</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&family=Courier+Prime&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'classic-cream': '#F9F6F0',
+                        'ink-black': '#1A1A1A',
+                        'blood-red': '#8B0000',
+                        'vintage-gold': '#C5A059',
+                        'paper-gray': '#EAE5D9',
+                        'amazon-orange': '#FF9900',
+                        'harper-blue': '#003B5C'
+                    },
+                    fontFamily: {
+                        'serif': ['"Crimson Pro"', 'serif'],
+                        'sans': ['Inter', 'sans-serif'],
+                        'typewriter': ['"Courier Prime"', 'monospace']
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    },
+                    animation: {
+                        float: 'float 4s ease-in-out infinite',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #F9F6F0;
+            color: #1A1A1A;
+            background-image: radial-gradient(circle at center, transparent 40%, rgba(139,0,0,0.03) 100%);
+            background-attachment: fixed;
+        }
+        
+        .book-card {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        
+        .book-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 15px 20px -5px rgba(139, 0, 0, 0.1), 0 8px 10px -5px rgba(139, 0, 0, 0.05);
+            border-color: #8B0000;
+        }
+
+        .book-card.active {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 10px 15px -3px rgba(139, 0, 0, 0.1);
+            border-color: #8B0000;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(234, 229, 217, 0.5); 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #C5A059; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #8B0000; 
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        .faq-answer {
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .faq-answer.open {
+            max-height: 600px; 
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased min-h-screen flex flex-col relative">
+
+    <header class="sticky top-0 z-50 bg-ink-black/95 backdrop-blur-md text-classic-cream pt-6 pb-0 border-b-4 border-blood-red shadow-xl">
+        <div class="max-w-7xl mx-auto px-4 md:px-6">
+            <div class="flex justify-between items-start relative h-full mb-4">
+                <div id="headerTitle">
+                    <h1 class="text-3xl md:text-4xl font-serif font-bold tracking-tight">O Acervo Christie</h1>
+                    <p class="text-sm md:text-base text-vintage-gold mt-1">A biblioteca completa da Rainha do Crime</p>
+                </div>
+                
+                <button id="searchToggleBtn" class="text-3xl md:text-4xl opacity-80 hover:opacity-100 hover:text-vintage-gold transition-all focus:outline-none transform hover:scale-110">
+                    &#128269;
+                </button>
+
+                <div id="searchContainer" class="hidden absolute inset-0 bg-ink-black/95 backdrop-blur-md flex items-center justify-between w-full z-20 pb-4">
+                    <div class="flex items-center w-full max-w-4xl">
+                        <span class="text-2xl mr-3 opacity-50 text-vintage-gold">&#128269;</span>
+                        <input type="text" id="searchInput" placeholder="Pesquisar por título, detetive ou tema..." class="w-full bg-transparent border-b-2 border-vintage-gold text-classic-cream text-lg md:text-2xl placeholder-gray-500 focus:outline-none py-2 px-1 font-serif">
+                    </div>
+                    <button id="closeSearchBtn" class="text-classic-cream text-2xl ml-6 hover:text-blood-red transition-all focus:outline-none transform hover:rotate-90">
+                        &#10006;
+                    </button>
+                </div>
+            </div>
+
+            <nav class="flex gap-6 mt-6">
+                <button id="navCatalog" class="border-b-4 border-vintage-gold text-vintage-gold font-bold pb-2 px-1 tracking-wide text-sm md:text-base uppercase" onclick="switchTab('catalog')">
+                    &#128193; Arquivo de Casos
+                </button>
+                <button id="navQA" class="border-b-4 border-transparent text-gray-400 font-bold pb-2 px-1 hover:text-vintage-gold transition-all tracking-wide text-sm md:text-base uppercase" onclick="switchTab('qa')">
+                    &#128373; Sala de Interrogatório
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <div id="viewsContainer" class="flex-grow max-w-7xl mx-auto w-full px-4 md:px-6 py-8 relative z-10">
+
+        <main id="viewCatalog" class="flex flex-col lg:flex-row gap-8 w-full animate-fade-in">
+            <section class="w-full lg:w-7/12 flex flex-col h-full">
+                <div class="mb-6 bg-white/80 backdrop-blur-sm p-5 rounded-lg shadow-sm border border-paper-gray flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-serif font-bold text-ink-black mb-1">Catálogo Oficial</h2>
+                        <p class="text-gray-600 text-sm">Explorando <span id="bookCount" class="font-bold text-blood-red">0</span> casos literários.</p>
+                    </div>
+                    <div class="text-4xl opacity-20 text-vintage-gold">&#128218;</div>
+                </div>
+
+                <div class="flex justify-between items-center mb-4 bg-paper-gray/50 backdrop-blur-sm p-3 rounded-lg border border-gray-300">
+                    <div class="text-sm text-gray-700 font-medium">
+                        <span id="resultsText">Todos os livros</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label for="sortSelect" class="text-sm font-medium text-gray-700 hidden md:inline">Ordenar:</label>
+                        <select id="sortSelect" class="bg-white border border-gray-300 text-ink-black text-sm rounded-md focus:ring-vintage-gold focus:border-vintage-gold p-1.5 outline-none cursor-pointer">
+                            <option value="year_asc">Ordem Cronológica</option>
+                            <option value="year_desc">Mais Recentes</option>
+                            <option value="rating">Maior Nota</option>
+                            <option value="alpha">Ordem Alfabética</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="bookList" class="flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-2 pb-4" style="height: calc(100vh - 280px); min-height: 500px;">
+                </div>
+            </section>
+
+            <section class="w-full lg:w-5/12">
+                <div class="sticky top-40 flex flex-col gap-6">
+                    <div class="bg-white/90 backdrop-blur-sm p-5 rounded-lg shadow-sm border border-paper-gray hidden md:block" id="chartWrapper">
+                        <h3 class="text-lg font-serif font-bold mb-1 text-ink-black">Aprovação (Top 5)</h3>
+                        <div class="chart-container mt-4">
+                            <canvas id="ratingsChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div id="detailPanel" class="bg-ink-black text-classic-cream p-6 rounded-lg shadow-2xl relative overflow-hidden hidden flex-col border border-gray-800">
+                        <div class="absolute -right-10 -top-10 text-9xl opacity-5 select-none text-vintage-gold">&#128214;</div>
+                        <div class="relative z-10 flex flex-col h-full">
+                            <div>
+                                <div class="inline-block px-3 py-1 bg-blood-red text-white text-xs font-bold rounded-full mb-3 uppercase tracking-wider" id="detailDetective"></div>
+                                <h2 id="detailTitle" class="text-2xl md:text-3xl font-serif font-bold mb-2"></h2>
+                                <div class="flex items-center gap-4 text-sm text-gray-400 mb-4 border-b border-gray-800 pb-4">
+                                    <span>Ano: <span id="detailYear" class="text-vintage-gold font-bold"></span></span>
+                                    <span>Nota: <span class="text-vintage-gold">★</span> <span id="detailRating" class="font-bold text-white"></span>/5</span>
+                                </div>
+                                <div class="mb-5">
+                                    <h4 class="text-xs font-bold text-vintage-gold uppercase mb-2 tracking-widest opacity-80">O Mistério</h4>
+                                    <p id="detailDesc" class="text-gray-300 text-sm leading-relaxed"></p>
+                                </div>
+                                <div class="mb-6 p-4 bg-white/5 rounded border-l-4 border-vintage-gold">
+                                    <h4 class="text-xs font-bold text-white mb-2 uppercase tracking-wide">Por que ler?</h4>
+                                    <p id="detailWhy" class="text-sm text-gray-300 italic"></p>
+                                </div>
+                            </div>
+
+                            <div class="mb-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <button id="btnGenerateDossier" class="w-full bg-transparent border border-vintage-gold text-vintage-gold hover:bg-vintage-gold hover:text-ink-black font-bold py-2.5 rounded transition-all text-sm flex justify-center items-center gap-2">
+                                        <span>✨ Dossiê (Texto)</span>
+                                    </button>
+                                    <button id="btnGenerateImage" class="w-full bg-transparent border border-gray-600 text-gray-500 hover:border-vintage-gold hover:text-vintage-gold font-bold py-2.5 rounded transition-all text-sm flex justify-center items-center gap-2">
+                                        <span>🔒 Atmosfera (Img)</span>
+                                    </button>
+                                </div>
+                                <div id="dossierLoading" class="hidden text-center mt-4 text-vintage-gold text-sm italic animate-pulse">Processando...</div>
+                                <div id="dossierContent" class="hidden mt-4 p-5 bg-[#121212] border border-gray-800 rounded text-gray-300 text-sm relative">
+                                    <div id="dossierText" class="font-typewriter"></div>
+                                    <div class="flex gap-2 mt-5">
+                                        <button id="btnPlayAudio" class="bg-white/10 hover:bg-white/20 text-white text-xs py-2 px-3 rounded flex items-center justify-center gap-2 w-full border border-gray-600">
+                                            <span>🔒 Solicitar Fita de Áudio</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-auto border-t border-gray-800 pt-5">
+                                <div class="flex flex-col gap-3">
+                                    <a id="btnAmazon" href="#" target="_blank" class="w-full bg-amazon-orange hover:bg-yellow-500 text-ink-black font-bold py-3 px-4 rounded-md transition-all flex justify-center items-center gap-2 shadow-lg">
+                                        <span>🛒</span> <span>Compre na Amazon</span> 
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="emptyPanel" class="bg-white/50 backdrop-blur-sm border-2 border-gray-300 border-dashed rounded-xl p-10 flex flex-col items-center justify-center text-center h-[500px]">
+                        <div class="text-6xl text-vintage-gold mb-6 animate-float">&#128269;</div>
+                        <h3 class="text-2xl font-serif font-bold mb-2">Inicie a Investigação</h3>
+                        <p class="text-gray-600 text-sm max-w-xs leading-relaxed">Selecione um caso arquivado no catálogo para visualizar os relatórios.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <main id="viewQA" class="hidden flex-col lg:flex-row gap-8 w-full">
+            <section class="w-full lg:w-6/12 flex flex-col h-full">
+                <div class="mb-6 bg-white/80 p-6 rounded-lg border border-paper-gray">
+                    <h2 class="text-3xl font-serif font-bold text-ink-black mb-2">Segredos do Acervo</h2>
+                    <p class="text-gray-700 text-sm">Dúvidas frequentes dos investigadores.</p>
+                </div>
+                <div class="flex flex-col gap-4">
+                    <div class="bg-white/90 rounded-lg border border-paper-gray shadow-sm overflow-hidden">
+                        <button class="w-full text-left p-5 font-serif font-bold text-lg flex justify-between items-center" onclick="toggleFaq('faq1')">
+                            Por que 'Roger Ackroyd' é polémico?
+                            <span id="icon-faq1" class="text-vintage-gold text-2xl transition-transform">+</span>
+                        </button>
+                        <div id="faq1" class="faq-answer px-5 pb-5 text-gray-700 text-sm hidden">
+                            <p class="pt-2">Agatha quebrou a regra do narrador confiável em 1926, criando um dos maiores choques literários de sempre.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="w-full lg:w-6/12 mt-8 lg:mt-0">
+                <div class="bg-white rounded-xl border border-gray-300 shadow-2xl h-[650px] flex flex-col overflow-hidden">
+                    <div class="bg-ink-black p-5 border-b-4 border-vintage-gold flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-paper-gray flex items-center justify-center text-2xl">🕵️‍♂️</div>
+                        <div>
+                            <h3 class="text-classic-cream font-serif font-bold text-xl">O Especialista IA</h3>
+                            <p class="text-vintage-gold text-xs uppercase">Conexão Scotland Yard</p>
+                        </div>
+                    </div>
+                    <div id="chatHistory" class="flex-grow p-6 overflow-y-auto bg-[#Fdfbf7] font-typewriter text-sm flex flex-col gap-5 relative">
+                    </div>
+                    <div class="bg-paper-gray/80 p-4 border-t border-gray-300">
+                        <form id="qaForm" class="flex gap-2 relative">
+                            <input type="text" id="qaInput" placeholder="Pergunte algo..." class="flex-grow bg-white border border-gray-400 rounded-md p-3 text-sm font-sans" required>
+                            <button type="submit" class="bg-ink-black hover:bg-vintage-gold text-white hover:text-ink-black px-6 rounded-md font-bold transition-all">➔</button>
+                            <div id="qaLoading" class="hidden absolute inset-0 bg-paper-gray/95 flex items-center justify-center rounded-md">
+                                <span class="text-ink-black font-bold animate-pulse text-sm font-typewriter">Datilografando...</span>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <footer class="bg-ink-black text-center py-6 border-t-2 border-vintage-gold">
+        <p class="text-gray-400 text-xs font-serif tracking-widest">O ACERVO CHRISTIE &copy; 2026</p>
+    </footer>
+
+    <script>
+        // ==========================================
+        // COLE SUA NOVA CHAVE AQUI
+        // ==========================================
+        const apiKey = "SUA_NOVA_CHAVE_AQUI"; 
+
+        const booksData = [
+            { id: 1, title: "O Misterioso Caso de Styles", detective: "Hercule Poirot", year: 1920, rating: 4.3, desc: "A estreia literária de Agatha Christie e do detetive Hercule Poirot. Uma rica herdeira é envenenada em sua mansão.", why: "Fundamental para entender a origem de Poirot e o nascimento do estilo clássico." },
+            { id: 2, title: "Assassinato no Campo de Golfe", detective: "Hercule Poirot", year: 1923, rating: 4.1, desc: "Poirot recebe um pedido de ajuda urgente da França, mas chega tarde demais: o cliente está morto num campo de golfe.", why: "Traz uma bela rivalidade entre Poirot e a polícia francesa." },
+            { id: 3, title: "O Assassinato de Roger Ackroyd", detective: "Hercule Poirot", year: 1926, rating: 4.9, desc: "Em um vilarejo pacato, o homem mais rico é assassinado. Poirot é chamado para investigar a história narrada pelo médico local.", why: "Considerada a obra-prima com o plot twist mais famoso da história." },
+            { id: 4, title: "Os Quatro Grandes", detective: "Hercule Poirot", year: 1927, rating: 3.8, desc: "Poirot e Hastings enfrentam um sindicato do crime internacional de quatro supervilões.", why: "Uma leitura diferente, voltada para espionagem e ação frenética." },
+            { id: 5, title: "O Mistério do Trem Azul", detective: "Hercule Poirot", year: 1928, rating: 4.0, desc: "Uma herdeira americana é estrangulada a bordo de um trem luxuoso e seus rubis desaparecem.", why: "Um ensaio fantástico para o que viria a ser o Expresso do Oriente." },
+            { id: 6, title: "A Casa do Penhasco", detective: "Hercule Poirot", year: 1932, rating: 4.4, desc: "A jovem Nick Buckley escapa por pouco de três acidentes mortais. Poirot tenta protegê-la.", why: "Um mistério ágil onde o detetive tenta impedir o crime antes que ocorra." },
+            { id: 7, title: "Treze à Mesa", detective: "Hercule Poirot", year: 1933, rating: 4.3, desc: "Uma atriz famosa é suspeita de matar o marido, mas tem um álibi perfeito: estava num jantar com 13 pessoas.", why: "Um dos álibis mais brilhantemente construídos da autora." },
+            { id: 8, title: "O Assassinato no Expresso do Oriente", detective: "Hercule Poirot", year: 1934, rating: 4.8, desc: "Um trem preso por uma nevasca. Um assassinato em cabine trancada. Poirot está a bordo.", why: "O ápice do mistério de 'quarto trancado'. Essencial e inesquecível." },
+            { id: 9, title: "Tragédia em Três Atos", detective: "Hercule Poirot", year: 1934, rating: 4.2, desc: "Um reverendo morre em uma festa ao beber um coquetel envenenado. Outra morte ocorre logo depois.", why: "O mundo do teatro se mistura com o crime, trazendo camadas de ilusão." },
+            { id: 10, title: "Morte nas Nuvens", detective: "Hercule Poirot", year: 1935, rating: 4.2, desc: "Uma agiota é morta a bordo de um voo Paris-Londres por um dardo envenenado.", why: "Um cenário extremamente confinado que testa a lógica pura de dedução." },
+            { id: 11, title: "Os Crimes ABC", detective: "Hercule Poirot", year: 1936, rating: 4.6, desc: "Um serial killer alfabético envia cartas provocativas a Poirot antes de cada novo crime.", why: "Inovador para a época, com ritmo de thriller investigativo moderno." },
+            { id: 12, title: "Morte na Mesopotâmia", detective: "Hercule Poirot", year: 1936, rating: 4.1, desc: "Durante uma escavação arqueológica no Iraque, a esposa do chefe da expedição é assassada.", why: "Inspirado nas viagens reais de Agatha, rico em detalhes arqueológicos." },
+            { id: 13, title: "Cartas na Mesa", detective: "Hercule Poirot", year: 1936, rating: 4.5, desc: "O excêntrico Mr. Shaitana convida quatro detetives e quatro assassinos para um jogo de bridge.", why: "Puro exercício psicológico baseado na forma como as pessoas jogam." },
+            { id: 14, title: "Morte no Nilo", detective: "Hercule Poirot", year: 1937, rating: 4.7, desc: "Um triângulo amoroso culmina em assassinato durante um cruzeiro pelo Egito.", why: "Drama intenso, paixões arrebatadoras e um crime meticuloso." },
+            { id: 15, title: "Encontro com a Morte", detective: "Hercule Poirot", year: 1938, rating: 4.2, desc: "A matriarca cruel Boynton é encontrada morta nas ruínas de Petra. Todos tinham motivos.", why: "Estudo fascinante sobre dinâmicas familiares tóxicas." },
+            { id: 16, title: "O Natal de Poirot", detective: "Hercule Poirot", year: 1938, rating: 4.5, desc: "Um milionário sádico reúne a família para o Natal e é brutalmente assassinado.", why: "Sangrento e engenhoso, uma resposta aos críticos que pediam mais realismo." },
+            { id: 17, title: "Cipreste Triste", detective: "Hercule Poirot", year: 1940, rating: 4.3, desc: "Elinor Carlisle está no tribunal condenada pela morte da rival. Poirot tenta salvá-la.", why: "Estrutura única começando no tribunal, com tom melancólico." },
+            { id: 18, title: "O Mal Sob o Sol", detective: "Hercule Poirot", year: 1941, rating: 4.4, desc: "Uma ex-atriz deslumbrante é estrangulada em uma praia isolada num resort.", why: "O clássico mistério de férias com múltiplos álibis sincronizados." },
+            { id: 19, title: "Cinco Porquinhos", detective: "Hercule Poirot", year: 1942, rating: 4.6, desc: "Poirot reabre um caso de 16 anos atrás para provar a inocência de uma mulher.", why: "Brilhantismo psicológico e múltiplas perspectivas de um mesmo fato." },
+            { id: 20, title: "A Mansão Hollow", detective: "Hercule Poirot", year: 1946, rating: 4.2, desc: "Poirot chega para um almoço e encontra um homem morrendo na piscina e a esposa armada.", why: "Excelente desenvolvimento de personagens e drama existencial." },
+            { id: 21, title: "Seguindo a Correnteza", detective: "Hercule Poirot", year: 1948, rating: 4.0, desc: "Semanas após o enterro de um milionário, sua irmã declara que ele foi assassinado.", why: "Poirot lidando com a repressão de uma família tradicional pós-guerra." },
+            { id: 22, title: "A Morte da Sra. McGinty", detective: "Hercule Poirot", year: 1952, rating: 4.3, desc: "Um homem está prestes a ser enforcado, mas o policial do caso não acredita na culpa dele.", why: "Trama focada em segredos do passado enterrados em uma pequena vila." },
+            { id: 23, title: "Depois do Funeral", detective: "Hercule Poirot", year: 1953, rating: 4.4, desc: "Após um funeral, a irmã do falecido solta: 'Ele foi assassinado, não foi?'. No dia seguinte, ela morre.", why: "Reviravoltas clássicas de herança com um twist final desconcertante." },
+            { id: 24, title: "Morte na Rua Hickory", detective: "Hercule Poirot", year: 1955, rating: 4.0, desc: "Furtos bizarros em uma pensão de estudantes levam Poirot a descobrir uma teia criminal.", why: "Vislumbre raro de Poirot lidando com a juventude da década de 50." },
+            { id: 25, title: "A Extravagância do Morto", detective: "Hercule Poirot", year: 1956, rating: 4.1, desc: "A escritora Ariadne Oliver sente que um crime de mentira em uma festa vai virar verdade.", why: "Meta-ficção deliciosa com o alter ego de Agatha Christie." },
+            { id: 26, title: "Um Gato Entre os Pombos", detective: "Hercule Poirot", year: 1959, rating: 4.1, desc: "Espionagem internacional e joias roubadas colidem num prestigiado colégio interno feminino.", why: "Mistura de suspense escolar com thriller político." },
+            { id: 27, title: "Os Relógios", detective: "Hercule Poirot", year: 1963, rating: 3.9, desc: "Um cadáver cercado por relógios marcando a hora errada em casa de uma mulher cega.", why: "Um quebra-cabeça bizarro resolvido quase sem sair da poltrona." },
+            { id: 28, title: "A Terceira Moça", detective: "Hercule Poirot", year: 1966, rating: 3.7, desc: "Uma jovem confusa diz a Poirot: 'Acho que cometi um assassinato', e foge.", why: "O detetive vitoriano confrontando a cultura hippie dos anos 60." },
+            { id: 29, title: "A Noite das Bruxas", detective: "Hercule Poirot", year: 1969, rating: 4.1, desc: "Em um Halloween, uma garota diz ter visto um assassinato anos atrás. Ela morre na mesma noite.", why: "Atmosfera sombria e segredos doentios de cidade pequena." },
+            { id: 30, title: "Os Elefantes Não Esquecem", detective: "Hercule Poirot", year: 1972, rating: 3.8, desc: "Investigação sobre o suicídio duplo de um casal ocorrido muitos anos antes.", why: "Um estudo poético sobre memória e tragédias passadas." },
+            { id: 31, title: "Cai o Pano", detective: "Hercule Poirot", year: 1975, rating: 4.8, desc: "Velho e doente, Poirot retorna a Styles para caçar um assassino implacável.", why: "A despedida épica com um desfecho chocante e perfeito." },
+            { id: 32, title: "Assassinato na Casa do Pastor", detective: "Miss Marple", year: 1930, rating: 4.2, desc: "A estreia de Miss Marple. O detestável Coronel Protheroe é encontrado morto na casa do pastor.", why: "Estabelece a brilhante percepção da velhinha tricoteira." },
+            { id: 33, title: "Um Corpo na Biblioteca", detective: "Miss Marple", year: 1942, rating: 4.5, desc: "Corpo de uma dançarina estrangulada na biblioteca da respeitável família Bantry.", why: "Clássico que brinca e subverte os clichês do gênero." },
+            { id: 34, title: "A Mão Misteriosa", detective: "Miss Marple", year: 1942, rating: 4.3, desc: "Cidade aterrorizada por cartas anônimas venenosas que resultam em morte.", why: "Excelente dinâmica de vizinhos fofoqueiros e maldades escondidas." },
+            { id: 35, title: "Um Convite para um Homicídio", detective: "Miss Marple", year: 1950, rating: 4.7, desc: "Anúncio no jornal convida para um assassinato. Todos acham que é brincadeira até as luzes apagarem.", why: "Obra-prima de dedução e observação humana." },
+            { id: 36, title: "Um Passe de Mágica", detective: "Miss Marple", year: 1952, rating: 4.0, desc: "Marple visita amiga em mansão que funciona como reabilitação para jovens delinquentes.", why: "Aborda temas de psicologia criminal e traição familiar." },
+            { id: 37, title: "Cem Gramas de Centeio", detective: "Miss Marple", year: 1953, rating: 4.1, desc: "Empresário morre envenenado. Os crimes seguem uma rima infantil macabra.", why: "Uso genial de elementos lúdicos para crimes terríveis." },
+            { id: 38, title: "A Testemunha Ocular do Crime", detective: "Miss Marple", year: 1957, rating: 4.4, desc: "Através da janela do trem, uma mulher vê um estrangulamento no trem ao lado.", why: "Premissa eletrizante com infiltração e espionagem doméstica." },
+            { id: 39, title: "A Maldição do Espelho", detective: "Miss Marple", year: 1962, rating: 4.3, desc: "Uma estrela de Hollywood muda-se para St. Mary Mead. Fã morre em sua festa.", why: "Focado em glamour, segredos de cinema e ilusões visuais." },
+            { id: 40, title: "Mistério no Caribe", detective: "Miss Marple", year: 1964, rating: 4.2, desc: "De férias, Marple investiga morte de hóspede que mencionou um assassino.", why: "Marple fora de seu ambiente rural, provando que a maldade é global." },
+            { id: 41, title: "O Caso do Hotel Bertram", detective: "Miss Marple", year: 1965, rating: 3.9, desc: "Hotel londrino eduardiano esconde complexa teia criminal sob perfeição.", why: "Crítica à nostalgia excessiva e ao crime organizado imaculado." },
+            { id: 42, title: "Nêmesis", detective: "Miss Marple", year: 1971, rating: 4.2, desc: "Milionário deixa missão post-mortem para Miss Marple: descobrir um crime antigo.", why: "Road trip investigativa onde Marple age como a Deusa da Justiça." },
+            { id: 43, title: "Um Crime Adormecido", detective: "Miss Marple", year: 1976, rating: 4.4, desc: "Jovem recém-casada tem alucinações de que viu uma mulher ser estrangulada em casa.", why: "Atmosfera gótica e traumas infantis assombrando o presente." },
+            { id: 44, title: "O Inimigo Secreto", detective: "Tommy e Tuppence", year: 1922, rating: 4.0, desc: "Amigos abrem agência de aventureiros e tropeçam num complô internacional.", why: "Apresenta a dupla mais dinâmica e carismática da autora." },
+            { id: 45, title: "M ou N?", detective: "Tommy e Tuppence", year: 1941, rating: 4.1, desc: "Durante a 2ª Guerra, o casal caça espiões nazistas infiltrados num hotel.", why: "Espionagem e paranoia no auge do conflito mundial." },
+            { id: 46, title: "Um Pressentimento Funesto", detective: "Tommy e Tuppence", year: 1968, rating: 3.6, desc: "Busca por segredos enterrados após ouvir balbucios sobre assassinato num asilo.", why: "Lida com o envelhecimento e memórias distorcidas." },
+            { id: 47, title: "Portal do Destino", detective: "Tommy e Tuppence", year: 1973, rating: 3.2, desc: "Aposentados encontram mensagem cifrada em livro infantil sobre um crime.", why: "Último romance escrito, carregado de nostalgia." },
+            { id: 48, title: "O Segredo de Chimneys", detective: "Supt. Battle", year: 1925, rating: 3.9, desc: "Jovem aventureiro envolvido em morte e segredos diplomáticos em mansão.", why: "Aventura cômica com intriga política internacional." },
+            { id: 49, title: "O Mistério dos Sete Relógios", detective: "Supt. Battle", year: 1929, rating: 3.8, desc: "Sociedade secreta macabra deixa relógios junto aos corpos de vítimas.", why: "Tom leve e audacioso típico dos anos 20." },
+            { id: 50, title: "O Homem do Terno Marrom", detective: "Cel. Race", year: 1924, rating: 4.1, desc: "Órfã presencia morte e persegue homem misterioso até a África do Sul.", why: "Thriller de aventura puro inspirado em viagens da autora." },
+            { id: 51, title: "E Não Sobrou Nenhum", detective: "Standalone", year: 1939, rating: 4.9, desc: "Dez estranhos em ilha isolada morrendo um a um conforme poema infantil.", why: "O maior livro de mistério de todos os tempos. Perfeito." },
+            { id: 52, title: "A Casa Torta", detective: "Standalone", year: 1949, rating: 4.5, desc: "Patriarca bilionário envenenado em casa onde vivem três gerações.", why: "Um dos favoritos da própria autora, com final chocante." },
+            { id: 53, title: "Noite Sem Fim", detective: "Standalone", year: 1967, rating: 4.6, desc: "Jovem pobre e herdeira casam-se em local dito amaldiçoado.", why: "Obra-prima de horror psicológico e atmosfera densa." },
+            { id: 54, title: "O Cavalo Amarelo", detective: "Standalone", year: 1961, rating: 4.3, desc: "Padre morto após confissão. Rastro leva a estalagem com bruxas.", why: "Mistura brilhante de sobrenatural com explicação lógica." },
+            { id: 55, title: "Um Brinde de Cianureto", detective: "Standalone", year: 1944, rating: 4.2, desc: "Esposa de milionário morre envenenada. Meses depois, outro crime na mesma mesa.", why: "Trama cíclica fascinante envolvendo alta sociedade londrina." },
+            { id: 56, title: "Encontro em Bagdá", detective: "Standalone", year: 1951, rating: 4.0, desc: "Jovem viaja para o Iraque e cai em conspiração internacional.", why: "Espionagem com cenários orientais amados pela autora." },
+            { id: 57, title: "Passageiro para Frankfurt", detective: "Standalone", year: 1970, rating: 3.4, desc: "Diplomata cede passagem a desconhecida e envolve-se em movimento global fascista.", why: "Reflete as ansiedades políticas do final dos anos 60." },
+            { id: 58, title: "Cipreste Triste", detective: "Standalone", year: 1940, rating: 4.3, desc: "Acusada de matar rival, Elinor Carlisle aguarda veredito enquanto verdade emerge.", why: "Poético e focado no triângulo amoroso fatal." },
+            { id: 59, title: "O Visitante Inesperado", detective: "Standalone", year: 1958, rating: 4.1, desc: "Homem entra em casa após acidente e encontra mulher com arma e marido morto.", why: "Trama compacta baseada em peça teatral de sucesso." },
+            { id: 60, title: "A Teia de Aranha", detective: "Standalone", year: 1954, rating: 4.0, desc: "Dona de casa que adora inventar histórias acha corpo real na sua sala.", why: "Comédia de erros que mergulha no mistério real." }
+        ];
+
+        let currentState = { sortBy: 'year_asc', searchQuery: '', selectedBookId: null, books: [] };
+        let chartInstance = null;
+
+        const DOM = {
+            viewCatalog: document.getElementById('viewCatalog'), viewQA: document.getElementById('viewQA'),
+            navCatalog: document.getElementById('navCatalog'), navQA: document.getElementById('navQA'),
+            bookList: document.getElementById('bookList'), sortSelect: document.getElementById('sortSelect'),
+            bookCount: document.getElementById('bookCount'), chartWrapper: document.getElementById('chartWrapper'), 
+            detailPanel: document.getElementById('detailPanel'), emptyPanel: document.getElementById('emptyPanel'), 
+            btnAmazon: document.getElementById('btnAmazon'), btnGenerateDossier: document.getElementById('btnGenerateDossier'),
+            btnGenerateImage: document.getElementById('btnGenerateImage'), btnPlayAudio: document.getElementById('btnPlayAudio'),
+            dossierLoading: document.getElementById('dossierLoading'), dossierContent: document.getElementById('dossierContent'), 
+            dossierText: document.getElementById('dossierText'), qaForm: document.getElementById('qaForm'),
+            qaInput: document.getElementById('qaInput'), qaLoading: document.getElementById('qaLoading'),
+            chatHistory: document.getElementById('chatHistory'), detailTitle: document.getElementById('detailTitle'),
+            detailDetective: document.getElementById('detailDetective'), detailYear: document.getElementById('detailYear'),
+            detailRating: document.getElementById('detailRating'), detailDesc: document.getElementById('detailDesc'),
+            detailWhy: document.getElementById('detailWhy')
+        };
+
+        function init() {
+            setupEventListeners();
+            processBooks();
+            initChart();
+        }
+
+        function switchTab(tab) {
+            if(tab === 'catalog') {
+                DOM.viewQA.classList.add('hidden'); DOM.viewCatalog.classList.remove('hidden');
+                DOM.navQA.classList.replace('text-vintage-gold', 'text-gray-400'); DOM.navQA.classList.replace('border-vintage-gold', 'border-transparent');
+                DOM.navCatalog.classList.replace('text-gray-400', 'text-vintage-gold'); DOM.navCatalog.classList.replace('border-transparent', 'border-vintage-gold');
+            } else {
+                DOM.viewCatalog.classList.add('hidden'); DOM.viewQA.classList.remove('hidden');
+                DOM.navCatalog.classList.replace('text-vintage-gold', 'text-gray-400'); DOM.navCatalog.classList.replace('border-vintage-gold', 'border-transparent');
+                DOM.navQA.classList.replace('text-gray-400', 'text-vintage-gold'); DOM.navQA.classList.replace('border-transparent', 'border-vintage-gold');
+            }
+        }
+
+        function toggleFaq(id) {
+            const answer = document.getElementById(id);
+            answer.classList.toggle('hidden');
+            setTimeout(() => answer.classList.toggle('open'), 10);
+        }
+
+        async function fetchWithRetry(url, options) {
+            const response = await fetch(url, options);
+            if (!response.ok) throw new Error('API Error');
+            return await response.json();
+        }
+
+        DOM.btnGenerateDossier.onclick = async () => {
+            const book = booksData.find(b => b.id === currentState.selectedBookId);
+            DOM.dossierLoading.classList.remove('hidden');
+            DOM.dossierContent.classList.add('hidden');
+            
+            // O MODELO CORRETO ESTÁ AQUI: gemini-1.5-flash
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            try {
+                const res = await fetchWithRetry(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: `Dossiê policial super curto (1 parágrafo) e SEM SPOILERS sobre ${book.title} da Agatha Christie.` }] }] }) });
+                const text = res.candidates[0].content.parts[0].text;
+                DOM.dossierText.innerHTML = text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                DOM.dossierLoading.classList.add('hidden'); 
+                DOM.dossierContent.classList.remove('hidden');
+            } catch (e) {
+                DOM.dossierLoading.innerText = "Erro ao contactar a Scotland Yard. Verifique se a Chave API está correta.";
+            }
+        };
+
+        DOM.btnGenerateImage.onclick = () => {
+            DOM.dossierLoading.classList.remove('hidden');
+            DOM.dossierLoading.innerText = "🔒 Acesso Negado: Fotografias de Nível 5 de Segurança.";
+            setTimeout(() => { DOM.dossierLoading.classList.add('hidden'); }, 3000);
+        };
+
+        DOM.btnPlayAudio.onclick = () => {
+            alert("🔒 Arquivo Selado: As fitas de áudio deste caso estão guardadas fisicamente na Scotland Yard e não podem ser ouvidas.");
+        };
+
+        DOM.qaForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const question = DOM.qaInput.value;
+            DOM.qaLoading.classList.remove('hidden');
+            
+            const divU = document.createElement('div');
+            divU.className = 'self-end max-w-[85%] bg-ink-black text-classic-cream p-4 rounded-tl-xl rounded-tr-xl rounded-bl-xl mt-2';
+            divU.innerText = question;
+            DOM.chatHistory.appendChild(divU);
+            
+            // O MODELO CORRETO DO CHAT ESTÁ AQUI: gemini-1.5-flash
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            try {
+                const res = await fetchWithRetry(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: `Atue como biógrafo de Agatha Christie. Responda curto e sem spoilers: ${question}` }] }] }) });
+                const answer = res.candidates[0].content.parts[0].text;
+                
+                const divA = document.createElement('div');
+                divA.className = 'self-start max-w-[85%] bg-white border border-gray-300 p-4 rounded-br-lg mt-2';
+                divA.innerHTML = `<p class="text-[10px] text-vintage-gold uppercase mb-1">IA Especialista:</p><p class="font-typewriter text-[13px]">${answer.replace(/\n/g, '<br>')}</p>`;
+                DOM.chatHistory.appendChild(divA);
+            } catch (e) {
+                const divE = document.createElement('div');
+                divE.className = 'self-start bg-red-100 text-red-800 p-3 rounded-br-lg mt-2';
+                divE.innerText = "Sinal de rádio com Londres perdido.";
+                DOM.chatHistory.appendChild(divE);
+            }
+            
+            DOM.qaLoading.classList.add('hidden'); 
+            DOM.qaInput.value = '';
+            DOM.chatHistory.scrollTop = DOM.chatHistory.scrollHeight;
+        };
+
+        function setupEventListeners() {
+            DOM.sortSelect.onchange = (e) => { currentState.sortBy = e.target.value; processBooks(); };
+            document.getElementById('searchToggleBtn').onclick = () => document.getElementById('searchContainer').classList.toggle('hidden');
+            document.getElementById('closeSearchBtn').onclick = () => document.getElementById('searchContainer').classList.add('hidden');
+            document.getElementById('searchInput').oninput = (e) => { currentState.searchQuery = e.target.value.toLowerCase(); processBooks(); };
+        }
+
+        function processBooks() {
+            let filtered = booksData.filter(b => b.title.toLowerCase().includes(currentState.searchQuery) || b.detective.toLowerCase().includes(currentState.searchQuery));
+            if(currentState.sortBy === 'year_asc') filtered.sort((a,b) => a.year - b.year);
+            if(currentState.sortBy === 'year_desc') filtered.sort((a,b) => b.year - a.year);
+            if(currentState.sortBy === 'rating') filtered.sort((a,b) => b.rating - a.rating);
+            currentState.books = filtered;
+            DOM.bookCount.innerText = filtered.length;
+            renderList();
+            updateChart();
+        }
+
+        function renderList() {
+            DOM.bookList.innerHTML = '';
+            currentState.books.forEach(b => {
+                const card = document.createElement('div');
+                card.className = `book-card bg-white/90 rounded-lg border p-4 cursor-pointer flex gap-4 ${currentState.selectedBookId === b.id ? 'active border-blood-red bg-red-50' : 'border-gray-200'}`;
+                card.innerHTML = `<div class="bg-paper-gray/80 min-w-[48px] h-12 rounded flex items-center justify-center font-bold font-serif shadow-inner border border-white/50">${b.year}</div><div class="flex-grow"><h4 class="font-serif font-bold text-lg leading-tight truncate max-w-sm text-ink-black">${b.title}</h4><div class="text-xs text-gray-500 mt-2 flex items-center gap-3"><span class="bg-gray-100/80 px-2 py-1 rounded border border-gray-200">${b.detective}</span><span class="text-vintage-gold font-bold">★ ${b.rating}</span></div></div>`;
+                card.onclick = () => selectBook(b.id);
+                DOM.bookList.appendChild(card);
+            });
+        }
+
+        function selectBook(id) {
+            currentState.selectedBookId = id;
+            renderList();
+            const b = booksData.find(x => x.id === id);
+            DOM.detailTitle.innerText = b.title; DOM.detailDetective.innerText = b.detective;
+            DOM.detailYear.innerText = b.year; DOM.detailRating.innerText = b.rating;
+            DOM.detailDesc.innerText = b.desc; DOM.detailWhy.innerText = b.why;
+            DOM.btnAmazon.href = `https://www.amazon.com.br/s?k=${encodeURIComponent(b.title + ' Agatha Christie')}`;
+            
+            DOM.emptyPanel.classList.add('hidden'); DOM.detailPanel.classList.remove('hidden');
+            DOM.dossierContent.classList.add('hidden');
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('ratingsChart').getContext('2d');
+            chartInstance = new Chart(ctx, { type: 'bar', data: { labels: [], datasets: [{ data: [], backgroundColor: '#C5A059' }] }, options: { indexAxis: 'y', scales: { x: { min: 3, max: 5 } }, plugins: { legend: false } } });
+        }
+
+        function updateChart() {
+            const top = currentState.books.slice(0, 5);
+            chartInstance.data.labels = top.map(x => x.title);
+            chartInstance.data.datasets[0].data = top.map(x => x.rating);
+            chartInstance.update();
+        }
+
+        init();
+    </script>
+</body>
+</html>
